@@ -7,10 +7,11 @@
     <string name="welcomestring">blah blah</string>
     <string name="btn1Text"> ∅ </string>
     <string name="btn2Text"> ⇿ </string>
+    
     <string name="btn3Text">R</string>
 
     <string name="btn4Text">G</string>
-    
+
     <string name="btn5Text">B</string>
 <!-- todo: unicode arrows above were  at http://unicode-table.com/en/sets/arrows-symbols/ and http://xahlee.info/comp/unicode_arrows.html -->
 
