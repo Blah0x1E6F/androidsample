@@ -85,14 +85,29 @@
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:text="@string/btn4Text"
-        android:textColor="#ff0099CC"
+        android:textColor="#ff669900"
         android:id="@+id/btn4"
-        android:onClick="onToggleBluePathBtnClick"
+        android:onClick="onToggleGreenPathBtnClick"
         android:background="#aaFFFFFF"
         android:layout_alignTop="@+id/btn3"
         android:layout_toRightOf="@+id/btn3"
         android:layout_toEndOf="@+id/btn3"
         android:layout_marginLeft="12dp"
         />
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="@string/btn5Text"
+        android:textColor="#ff0099CC"
+        android:id="@+id/btn5"
+        android:onClick="onToggleBluePathBtnClick"
+        android:background="#aaFFFFFF"
+        android:layout_toEndOf="@+id/btn4"
+        android:layout_alignTop="@+id/btn4"
+        android:layout_toRightOf="@+id/btn4"
+        android:layout_marginLeft="12dp" />
 
 </RelativeLayout>

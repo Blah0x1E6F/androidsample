@@ -279,6 +279,11 @@ public class NewtonCreekActivity extends FragmentActivity {
         mRedPath.toggle();
     }
 
+    public void onToggleGreenPathBtnClick(View v) {
+        Log.d(TAG, "onToggleGreenPathBtnClick");
+        //...
+    }
+
     public void onToggleBluePathBtnClick(View v) {
         Log.d(TAG, "onToggleBluePathBtnClick");
         mBluePath.toggle();
