@@ -75,8 +75,8 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:layout_marginBottom="12dp"
-        android:layout_marginLeft="12dp"
+        android:layout_marginBottom="10dp"
+        android:layout_marginLeft="10dp"
         />
 
     <Button
@@ -92,7 +92,7 @@
         android:layout_alignTop="@+id/btn3"
         android:layout_toRightOf="@+id/btn3"
         android:layout_toEndOf="@+id/btn3"
-        android:layout_marginLeft="12dp"
+        android:layout_marginLeft="10dp"
         />
 
     <Button
@@ -108,7 +108,7 @@
         android:layout_toEndOf="@+id/btn4"
         android:layout_alignTop="@+id/btn4"
         android:layout_toRightOf="@+id/btn4"
-        android:layout_marginLeft="12dp"
+        android:layout_marginLeft="10dp"
         />
 
     <Button
@@ -117,14 +117,30 @@
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:text="@string/btn6Text"
-        android:textColor="#ff0099CC"
+        android:textColor="#ff9933CC"
         android:id="@+id/btn6"
-        android:onClick="onToggleBluePathBtnClick"
+        android:onClick="onTogglePurplePathBtnClick"
         android:background="#aaFFFFFF"
         android:layout_toEndOf="@+id/btn5"
         android:layout_alignTop="@+id/btn5"
         android:layout_toRightOf="@+id/btn5"
-        android:layout_marginLeft="12dp"
+        android:layout_marginLeft="10dp"
+        />
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="@string/btn7Text"
+        android:textColor="#ff0099CC"
+        android:id="@+id/btn7"
+        android:onClick="onToggleBluePathBtnClick"
+        android:background="#aaFFFFFF"
+        android:layout_toEndOf="@+id/btn6"
+        android:layout_alignTop="@+id/btn6"
+        android:layout_toRightOf="@+id/btn6"
+        android:layout_marginLeft="10dp"
         />
 
 </RelativeLayout>

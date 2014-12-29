@@ -11,6 +11,9 @@ public class MyColors {
     public static final String DEEP_ORANGE = "#FF8800";
     public static final String DEEP_ORANGE_ST = "#80FF8800"; // semi-trans version
 
+    public static final String DEEP_PURPLE = "#9933CC";
+    public static final String DEEP_PURPLE_ST = "#809933CC"; // semi-trans version
+
     public static final String DEEP_BLUE = "#0099CC";
     public static final String DEEP_BLUE_ST = "#800099CC"; // semi-trans version
 }

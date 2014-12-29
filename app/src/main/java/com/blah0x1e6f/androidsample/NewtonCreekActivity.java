@@ -43,7 +43,7 @@ public class NewtonCreekActivity extends FragmentActivity {
     private GoogleMap mMap;
 
     private Path mRedPath, mBluePath;
-    private SlidingFilterPath mGreenPath, mOrangePath;
+    private SlidingFilterPath mGreenPath, mOrangePath, mPurplePath;
 
     private float mLastZoom = -1;
     private Projection mCurProjection;
@@ -99,13 +99,19 @@ public class NewtonCreekActivity extends FragmentActivity {
                 MyColors.DEEP_GREEN_ST,
                 R.drawable.diamond5_333333,
                 getResources().getDisplayMetrics().density,
-                new MedianFilter(3)
+                new MedianFilter(5)
         );
         mOrangePath = new SlidingFilterPath("Orange path",
                 MyColors.DEEP_ORANGE_ST,
                 R.drawable.diamond5_333333,
                 getResources().getDisplayMetrics().density,
-                new MedianFilter(9)
+                new SharkToothFilter(5)
+        );
+        mPurplePath = new SlidingFilterPath("Purple path",
+                MyColors.DEEP_PURPLE_ST,
+                R.drawable.diamond5_333333,
+                getResources().getDisplayMetrics().density,
+                new SharkToothFilter(13)
         );
         mBluePath = new Path("Blue path",
                 MyColors.DEEP_BLUE_ST,
@@ -143,6 +149,7 @@ public class NewtonCreekActivity extends FragmentActivity {
         outState.putBoolean("red is on", mRedPath.isPathOn());
         outState.putBoolean("green is on", mGreenPath.isPathOn());
         outState.putBoolean("orange is on", mOrangePath.isPathOn());
+        outState.putBoolean("purple is on", mPurplePath.isPathOn());
         outState.putBoolean("blue is on", mBluePath.isPathOn());
     }
 
@@ -153,6 +160,7 @@ public class NewtonCreekActivity extends FragmentActivity {
         mRedPath.setOn(savedInstanceState.getBoolean("red is on"));
         mGreenPath.setOn(savedInstanceState.getBoolean("green is on"));
         mOrangePath.setOn(savedInstanceState.getBoolean("orange is on"));
+        mPurplePath.setOn(savedInstanceState.getBoolean("purple is on"));
         mBluePath.setOn(savedInstanceState.getBoolean("blue is on"));
     }
 
@@ -201,6 +209,7 @@ public class NewtonCreekActivity extends FragmentActivity {
         mRedPath.addPoints(locations, newLocCount);
         int greenCtAdded = mGreenPath.addPoints(locations, newLocCount);
         int orangeCtAdded = mOrangePath.addPoints(locations, newLocCount);
+        int purpleCtAdded = mPurplePath.addPoints(locations, newLocCount);
         mBluePath.addPoints(locations, newLocCount);
 
         // Reposition map to fit all points, but only if we're not in the mode where the user is interacting with the map
@@ -229,6 +238,9 @@ public class NewtonCreekActivity extends FragmentActivity {
 
         if (orangeCtAdded > 0 && mOrangePath.isPathOn())
             mOrangePath.draw();
+
+        if (purpleCtAdded > 0 && mPurplePath.isPathOn())
+            mPurplePath.draw();
 
         if (mBluePath.isPathOn())
             mBluePath.draw();
@@ -285,6 +297,7 @@ public class NewtonCreekActivity extends FragmentActivity {
             mRedPath.reset();
             mGreenPath.reset();
             mOrangePath.reset();
+            mPurplePath.reset();
             mBluePath.reset();
 
             mBoundsBuilder = LatLngBounds.builder(); // Replace w/ a new, empty builder
@@ -318,6 +331,11 @@ public class NewtonCreekActivity extends FragmentActivity {
     public void onToggleOrangePathBtnClick(View v) {
         Log.d(TAG, "onToggleOrangePathBtnClick");
         mOrangePath.toggle();
+    }
+
+    public void onTogglePurplePathBtnClick(View v) {
+        Log.d(TAG, "onTogglePurplePathBtnClick");
+        mPurplePath.toggle();
     }
 
     public void onToggleBluePathBtnClick(View v) {
@@ -855,6 +873,67 @@ public class NewtonCreekActivity extends FragmentActivity {
             Arrays.sort(lngs);
 
             return new LatLng(lats[(int)(mWindowSize/2)], lngs[(int)(mWindowSize/2)]);
+        }
+    }
+
+    public class SharkToothFilter extends Filter {
+        private static final String TAG = "SharkToothFilter";
+
+        private double[] mWeights;
+
+        public SharkToothFilter(final int windowSize) {
+            super(windowSize);
+
+            // Create the filter
+            mWeights = new double[mWindowSize];
+            double total = 0;
+            int middle = (int)(mWindowSize / 2);
+
+            // All weights should add up to 1
+            //          *
+            //        * * *
+            //      * * * * *
+            // Delta is the height of each star; mWindowSize is # of columns. Therefore, the identity to preserve
+            // is:
+            //      ((mWindowSize + 1)/2)^2 * delta = 1
+            // whic is same as:
+            //      ( floor(mWindowSize/2) + 1 )^2 * delta = 1
+            // or:
+            //      (middle + 1)^2 * delta = 1
+            // or:
+            //      delta = 1 / (middle + 1)^2
+            //
+            double delta = 1.0 / (middle + 1) / (middle + 1);
+
+            // Left side and middle
+            for (int i = 0; i <= middle; i++) {
+                mWeights[i] = delta * (i + 1);
+                total += mWeights[i];
+            }
+
+            // Right side
+            for (int i = middle + 1; i < mWindowSize; i++) {
+                mWeights[i] = delta * (mWindowSize - i);
+                total += mWeights[i];
+            }
+
+            // Total should be 1, but due to rounding I don't think we can expect that precision
+            Assert.assertTrue(0.99 < total && total < 1.01);
+        }
+
+        public LatLng applyFilter(ArrayList<Location> locations, final int cur) {
+            if (cur < mWindowSize - 1) {
+                Log.d(TAG, "applyFilter: skipping locations[" + cur + "] (window size=" + mWindowSize + ")");
+                return null;
+            }
+
+            double lat = 0, lng = 0;
+            for (int i = cur - mWindowSize + 1, j = 0; i <= cur; i++, j++) {
+                lat += locations.get(i).getLatitude() * mWeights[j];
+                lng += locations.get(i).getLongitude() * mWeights[j];
+            }
+
+            return new LatLng(lat, lng);
         }
     }
 }

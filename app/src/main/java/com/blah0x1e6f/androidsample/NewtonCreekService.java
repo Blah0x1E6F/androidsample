@@ -151,7 +151,7 @@ public class NewtonCreekService extends Service implements
         // -------------------------------------------------------------
 
         // todo: handle the desired accuracy number
-        if (location.getAccuracy() <= 50) {
+        if (location.getAccuracy() <= 30) {
             mLocations.add(location); // Just keep adding locations
             Log.d(TAG, "onLocationChanged: " + MyUtil.formatFloat6((float)location.getLatitude()) + " (" + mLocations.size() + " locs)");
             // Notify Activity if it is available. No big deal if it's not avail, because when it becomes available, it'll grab all locations itself
