@@ -12,7 +12,9 @@
 
     <string name="btn4Text">G</string>
 
-    <string name="btn5Text">B</string>
+    <string name="btn5Text">O</string>
+
+    <string name="btn6Text">B</string>
 <!-- todo: unicode arrows above were  at http://unicode-table.com/en/sets/arrows-symbols/ and http://xahlee.info/comp/unicode_arrows.html -->
 
 

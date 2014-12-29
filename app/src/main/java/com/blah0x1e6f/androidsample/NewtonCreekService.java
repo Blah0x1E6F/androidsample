@@ -25,8 +25,8 @@ public class NewtonCreekService extends Service implements
         GooglePlayServicesClient.OnConnectionFailedListener,
         LocationListener {
     private static final String TAG = "NewtonCreek_SERVICE";
-    private static final int UPDATE_INTERVAL_MILLIS = 15 * 1000;
-    private static final int FASTEST_INTERVAL_MILLIS = 15 * 1000;
+    private static final int UPDATE_INTERVAL_MILLIS = 10 * 1000;
+    private static final int FASTEST_INTERVAL_MILLIS = 3 * 1000;
 
     private LocationRequest mLocationRequest;
     //todo the *right* way to do this is via GoogleApiClient, not LocationClient - here's an example: http://stackoverflow.com/questions/25047910/using-googleapiclient-locationservices-not-updating and here's the Google Developers page: http://developer.android.com/google/auth/api-client.html
@@ -143,11 +143,11 @@ public class NewtonCreekService extends Service implements
         mNumFixes++;
 
         // ------------------- location simulator ----------------------
-        if (null == mSimulator) {
-            mSimulator = new LocationSimulator();
-            Log.d(TAG, "Creating simulator...");
-        }
-        mSimulator.randomizeLocation(location);
+//        if (null == mSimulator) {
+//            mSimulator = new LocationSimulator();
+//            Log.d(TAG, "Creating simulator...");
+//        }
+//        mSimulator.randomizeLocation(location);
         // -------------------------------------------------------------
 
         // todo: handle the desired accuracy number

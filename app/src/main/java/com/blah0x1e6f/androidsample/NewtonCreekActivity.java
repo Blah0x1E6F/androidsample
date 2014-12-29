@@ -18,6 +18,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 
 import android.view.View;
@@ -40,7 +41,10 @@ public class NewtonCreekActivity extends FragmentActivity {
     private static final int MAP_PADDING_PX = 40;
 
     private GoogleMap mMap;
+
     private Path mRedPath, mBluePath;
+    private MovingMedianPath mGreenPath, mOrangePath;
+
     private float mLastZoom = -1;
     private Projection mCurProjection;
 
@@ -91,6 +95,18 @@ public class NewtonCreekActivity extends FragmentActivity {
                 R.drawable.cross5x5_333333,
                 getResources().getDisplayMetrics().density
             );
+        mGreenPath = new MovingMedianPath("Green path",
+                MyColors.DEEP_GREEN_ST,
+                R.drawable.diamond5_333333,
+                getResources().getDisplayMetrics().density,
+                11
+        );
+        mOrangePath = new MovingMedianPath("Orange path",
+                MyColors.DEEP_ORANGE_ST,
+                R.drawable.diamond5_333333,
+                getResources().getDisplayMetrics().density,
+                33
+        );
         mBluePath = new Path("Blue path",
                 MyColors.DEEP_BLUE_ST,
                 R.drawable.circle7_black,
@@ -125,6 +141,8 @@ public class NewtonCreekActivity extends FragmentActivity {
         Log.d(TAG, "onSaveInstanceState");
         super.onSaveInstanceState(outState);
         outState.putBoolean("red is on", mRedPath.isPathOn());
+        outState.putBoolean("green is on", mGreenPath.isPathOn());
+        outState.putBoolean("orange is on", mOrangePath.isPathOn());
         outState.putBoolean("blue is on", mBluePath.isPathOn());
     }
 
@@ -133,6 +151,8 @@ public class NewtonCreekActivity extends FragmentActivity {
         Log.d(TAG, "onRestoreInstanceState");
         super.onRestoreInstanceState(savedInstanceState);
         mRedPath.setOn(savedInstanceState.getBoolean("red is on"));
+        mGreenPath.setOn(savedInstanceState.getBoolean("green is on"));
+        mOrangePath.setOn(savedInstanceState.getBoolean("orange is on"));
         mBluePath.setOn(savedInstanceState.getBoolean("blue is on"));
     }
 
@@ -179,6 +199,8 @@ public class NewtonCreekActivity extends FragmentActivity {
         Log.d(TAG, "newLocationsAvail: detected " + newLocCount + " new locations");
 
         mRedPath.addPoints(locations, newLocCount);
+        int greenCtAdded = mGreenPath.addPoints(locations, newLocCount);
+        int orangeCtAdded = mOrangePath.addPoints(locations, newLocCount);
         mBluePath.addPoints(locations, newLocCount);
 
         // Reposition map to fit all points, but only if we're not in the mode where the user is interacting with the map
@@ -196,10 +218,17 @@ public class NewtonCreekActivity extends FragmentActivity {
             }
         }
 
-        mBluePath.adjustResolutionIfNeeded();
+        //todo!!! xx uncomment out later
+        //mBluePath.adjustResolutionIfNeeded();
 
         if (mRedPath.isPathOn())
             mRedPath.draw();
+
+        if (greenCtAdded > 0 && mGreenPath.isPathOn())
+            mGreenPath.draw();
+
+        if (orangeCtAdded > 0 && mOrangePath.isPathOn())
+            mOrangePath.draw();
 
         if (mBluePath.isPathOn())
             mBluePath.draw();
@@ -254,6 +283,8 @@ public class NewtonCreekActivity extends FragmentActivity {
 
             //todo: Note: the below doesn't really have to reside in the if block, but I want to keep it so that if the user clicked the reset btn and we haven't yet conneted to the service, nothing changes.  User will intuitively have to click again later.
             mRedPath.reset();
+            mGreenPath.reset();
+            mOrangePath.reset();
             mBluePath.reset();
 
             mBoundsBuilder = LatLngBounds.builder(); // Replace w/ a new, empty builder
@@ -281,7 +312,12 @@ public class NewtonCreekActivity extends FragmentActivity {
 
     public void onToggleGreenPathBtnClick(View v) {
         Log.d(TAG, "onToggleGreenPathBtnClick");
-        //...
+        mGreenPath.toggle();
+    }
+
+    public void onToggleOrangePathBtnClick(View v) {
+        Log.d(TAG, "onToggleOrangePathBtnClick");
+        mOrangePath.toggle();
     }
 
     public void onToggleBluePathBtnClick(View v) {
@@ -410,9 +446,10 @@ public class NewtonCreekActivity extends FragmentActivity {
                     // Getting Projection is an expensive op, so let's do it only once per zoom level
                     mCurProjection = mMap.getProjection();
 
-                    final boolean resolutionAdjusted = mBluePath.adjustResolutionIfNeeded();
-                    if (resolutionAdjusted && mBluePath.isPathOn())
-                        mBluePath.draw();
+                    //todo!!! xx uncomment out later
+//                    final boolean resolutionAdjusted = mBluePath.adjustResolutionIfNeeded();
+//                    if (resolutionAdjusted && mBluePath.isPathOn())
+//                        mBluePath.draw();
 
                     updateStatusBox();
                 }
@@ -438,8 +475,8 @@ public class NewtonCreekActivity extends FragmentActivity {
         /*
          * Member variables
          */
-        private String mTitle;
-        private ArrayList<LatLng> mPoints;
+        protected String mTitle;
+        protected ArrayList<LatLng> mPoints;
         private Polyline mPath;
         private LinkedList<Marker> mMarkers;
         private PolylineOptions mPolyOpts;
@@ -476,7 +513,7 @@ public class NewtonCreekActivity extends FragmentActivity {
             mPath = mMap.addPolyline(mPolyOpts);
         }
 
-        public void addPoints(final ArrayList<Location> locations, final int numToAdd) {
+        public int addPoints(final ArrayList<Location> locations, final int numToAdd) {
             // Update mPoints and bounds builder
             int count = 0;
             for (int i = locations.size() - numToAdd; i < locations.size(); i++, count++) {
@@ -485,13 +522,14 @@ public class NewtonCreekActivity extends FragmentActivity {
                 mBoundsBuilder.include(point);
             }
             Log.d(mTitle, "addPoints: added " + count + " pts");
+            return count;
         }
 
         // The reason we need to first check how many markers to add is that this function is called from
         // different contexts, e.g.:
         //  - in addPoints, where we're adding just a few markers
         //  - in adjustResolutionIfNeeded, where we're replacing all markers wholesale
-        private void draw() {
+        protected void draw() {
             int numNewMarkers = mPoints.size() - mMarkers.size();
             Assert.assertTrue(numNewMarkers >= 0); // Draw must not be called without first updating mPoints
 
@@ -688,8 +726,63 @@ public class NewtonCreekActivity extends FragmentActivity {
             return (float)Math.sqrt(Math.pow(b.y - a.y, 2) + Math.pow(b.x - a.x, 2));
         }
 
-        private LatLng locToLatLng(Location loc) { return new LatLng(loc.getLatitude(), loc.getLongitude()); }
+        protected LatLng locToLatLng(Location loc) { return new LatLng(loc.getLatitude(), loc.getLongitude()); }
     }
 
+    /*
+     * See http://en.wikipedia.org/wiki/Moving_average#Moving_median
+     * Let's try using this for getting rid of spikes, and hopefully preserving edges, i.e. when we turn a corner.
+     */
+    public class MovingMedianPath extends Path {
+        /*
+         * Constant(s)
+         */
+        private int mWindowSize; // Must be odd and >= 3 (since we'll be using a symmetrical window around a location)
+
+        private MovingMedianPath() {} // Hide default constructor
+
+        public MovingMedianPath(String title, String color, int iconResourceId, float screenDensity, int windowSize) {
+            super(title, color, iconResourceId, screenDensity);
+            Assert.assertTrue(windowSize % 2 == 1); // mWindowSize is odd
+            Assert.assertTrue(windowSize >= 3); // We need at least one element on either side of the center
+            mWindowSize = windowSize;
+        }
+
+        @Override
+        public int addPoints(ArrayList<Location> locations, int numToAdd) {
+            // Update mPoints and bounds builder
+            int count = 0;
+            for (int i = locations.size() - numToAdd; i < locations.size(); i++) {
+                if (i < mWindowSize - 1) {
+                    Log.d(mTitle, "addPoints: skipping locations[" + i + "] (window size=" + mWindowSize + ")");
+                    continue;
+                }
+
+                LatLng point = calcWindowMedian(locations, i);
+                mPoints.add(point);
+                mBoundsBuilder.include(point);
+                count++;
+            }
+            Log.d(mTitle, "addPoints: added " + count + " pts");
+            return count;
+        }
+
+        private LatLng calcWindowMedian(ArrayList<Location> locations, final int cur) {
+            Assert.assertTrue(cur >= mWindowSize - 1);
+
+            double[] lats = new double[mWindowSize];
+            double[] lngs = new double[mWindowSize];
+
+            for (int i = cur - mWindowSize + 1, j = 0; i <= cur; i++, j++) {
+                lats[j] = locations.get(i).getLatitude();
+                lngs[j] = locations.get(i).getLongitude();
+            }
+
+            Arrays.sort(lats);
+            Arrays.sort(lngs);
+
+            return new LatLng(lats[(int)(mWindowSize/2)], lngs[(int)(mWindowSize/2)]);
+        }
+    }
 
 }
