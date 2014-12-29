@@ -43,7 +43,7 @@ public class NewtonCreekActivity extends FragmentActivity {
     private GoogleMap mMap;
 
     private Path mRedPath, mBluePath;
-    private MovingMedianPath mGreenPath, mOrangePath;
+    private SlidingFilterPath mGreenPath, mOrangePath;
 
     private float mLastZoom = -1;
     private Projection mCurProjection;
@@ -95,17 +95,17 @@ public class NewtonCreekActivity extends FragmentActivity {
                 R.drawable.cross5x5_333333,
                 getResources().getDisplayMetrics().density
             );
-        mGreenPath = new MovingMedianPath("Green path",
+        mGreenPath = new SlidingFilterPath("Green path",
                 MyColors.DEEP_GREEN_ST,
                 R.drawable.diamond5_333333,
                 getResources().getDisplayMetrics().density,
-                11
+                new MedianFilter(3)
         );
-        mOrangePath = new MovingMedianPath("Orange path",
+        mOrangePath = new SlidingFilterPath("Orange path",
                 MyColors.DEEP_ORANGE_ST,
                 R.drawable.diamond5_333333,
                 getResources().getDisplayMetrics().density,
-                33
+                new MedianFilter(9)
         );
         mBluePath = new Path("Blue path",
                 MyColors.DEEP_BLUE_ST,
@@ -733,19 +733,68 @@ public class NewtonCreekActivity extends FragmentActivity {
      * See http://en.wikipedia.org/wiki/Moving_average#Moving_median
      * Let's try using this for getting rid of spikes, and hopefully preserving edges, i.e. when we turn a corner.
      */
-    public class MovingMedianPath extends Path {
-        /*
-         * Constant(s)
-         */
-        private int mWindowSize; // Must be odd and >= 3 (since we'll be using a symmetrical window around a location)
+//todo xx later, after testing, remove the commented out class
 
-        private MovingMedianPath() {} // Hide default constructor
+//    public class MovingMedianPath extends Path {
+//        /*
+//         * Constant(s)
+//         */
+//        private int mWindowSize; // Must be odd and >= 3 (since we'll be using a symmetrical window around a location)
+//
+//        private MovingMedianPath() {} // Hide default constructor
+//
+//        public MovingMedianPath(String title, String color, int iconResourceId, float screenDensity, int windowSize) {
+//            super(title, color, iconResourceId, screenDensity);
+//            Assert.assertTrue(windowSize % 2 == 1); // mWindowSize is odd
+//            Assert.assertTrue(windowSize >= 3); // We need at least one element on either side of the center
+//            mWindowSize = windowSize;
+//        }
+//
+//        @Override
+//        public int addPoints(ArrayList<Location> locations, int numToAdd) {
+//            // Update mPoints and bounds builder
+//            int count = 0;
+//            for (int i = locations.size() - numToAdd; i < locations.size(); i++) {
+//                if (i < mWindowSize - 1) {
+//                    Log.d(mTitle, "addPoints: skipping locations[" + i + "] (window size=" + mWindowSize + ")");
+//                    continue;
+//                }
+//
+//                LatLng point = calcWindowMedian(locations, i);
+//                mPoints.add(point);
+//                mBoundsBuilder.include(point);
+//                count++;
+//            }
+//            Log.d(mTitle, "addPoints: added " + count + " pts");
+//            return count;
+//        }
+//
+//        private LatLng calcWindowMedian(ArrayList<Location> locations, final int cur) {
+//            Assert.assertTrue(cur >= mWindowSize - 1);
+//
+//            double[] lats = new double[mWindowSize];
+//            double[] lngs = new double[mWindowSize];
+//
+//            for (int i = cur - mWindowSize + 1, j = 0; i <= cur; i++, j++) {
+//                lats[j] = locations.get(i).getLatitude();
+//                lngs[j] = locations.get(i).getLongitude();
+//            }
+//
+//            Arrays.sort(lats);
+//            Arrays.sort(lngs);
+//
+//            return new LatLng(lats[(int)(mWindowSize/2)], lngs[(int)(mWindowSize/2)]);
+//        }
+//    }
 
-        public MovingMedianPath(String title, String color, int iconResourceId, float screenDensity, int windowSize) {
+    public class SlidingFilterPath extends Path {
+        Filter mFilter;
+
+        private SlidingFilterPath() {} // Hide default constructor
+
+        public SlidingFilterPath(String title, String color, int iconResourceId, float screenDensity, Filter filter) {
             super(title, color, iconResourceId, screenDensity);
-            Assert.assertTrue(windowSize % 2 == 1); // mWindowSize is odd
-            Assert.assertTrue(windowSize >= 3); // We need at least one element on either side of the center
-            mWindowSize = windowSize;
+            mFilter = filter;
         }
 
         @Override
@@ -753,22 +802,46 @@ public class NewtonCreekActivity extends FragmentActivity {
             // Update mPoints and bounds builder
             int count = 0;
             for (int i = locations.size() - numToAdd; i < locations.size(); i++) {
-                if (i < mWindowSize - 1) {
-                    Log.d(mTitle, "addPoints: skipping locations[" + i + "] (window size=" + mWindowSize + ")");
-                    continue;
+                LatLng point = mFilter.applyFilter(locations, i);
+                if (point != null) {
+                    mPoints.add(point);
+                    mBoundsBuilder.include(point);
+                    count++;
                 }
-
-                LatLng point = calcWindowMedian(locations, i);
-                mPoints.add(point);
-                mBoundsBuilder.include(point);
-                count++;
             }
             Log.d(mTitle, "addPoints: added " + count + " pts");
             return count;
         }
+    }
 
-        private LatLng calcWindowMedian(ArrayList<Location> locations, final int cur) {
-            Assert.assertTrue(cur >= mWindowSize - 1);
+    /*
+     * Abstract base class for various filters
+     */
+    public abstract class Filter {
+        protected int mWindowSize;
+
+        private Filter() {} // Hide default constructor
+
+        public Filter(final int windowSize) {
+            Assert.assertTrue(windowSize % 2 == 1); // mWindowSize is odd
+            Assert.assertTrue(windowSize >= 3); // We need at least one element on either side of the center
+            mWindowSize = windowSize;
+        }
+
+        abstract public LatLng applyFilter(ArrayList<Location> locations, final int cur);
+    }
+
+    public class MedianFilter extends Filter {
+        private static final String TAG = "MedianFilter";
+
+        public MedianFilter(final int windowSize) { super(windowSize); }
+
+        @Override
+        public LatLng applyFilter(ArrayList<Location> locations, int cur) {
+            if (cur < mWindowSize - 1) {
+                Log.d(TAG, "applyFilter: skipping locations[" + cur + "] (window size=" + mWindowSize + ")");
+                return null;
+            }
 
             double[] lats = new double[mWindowSize];
             double[] lngs = new double[mWindowSize];
@@ -784,5 +857,4 @@ public class NewtonCreekActivity extends FragmentActivity {
             return new LatLng(lats[(int)(mWindowSize/2)], lngs[(int)(mWindowSize/2)]);
         }
     }
-
 }
