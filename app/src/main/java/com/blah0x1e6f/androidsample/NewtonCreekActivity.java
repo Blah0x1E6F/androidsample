@@ -92,30 +92,30 @@ public class NewtonCreekActivity extends FragmentActivity {
 
         mRedPath = new Path("Red path",
                 MyColors.DEEP_RED_ST,
-                R.drawable.cross5x5_333333,
+                R.drawable.dot3_444444,
                 getResources().getDisplayMetrics().density
             );
         mGreenPath = new SlidingFilterPath("Green path",
                 MyColors.DEEP_GREEN_ST,
-                R.drawable.diamond5_333333,
+                R.drawable.dot3_444444,
                 getResources().getDisplayMetrics().density,
-                new MedianFilter(5)
+                new MedianFilter(9)
         );
         mOrangePath = new SlidingFilterPath("Orange path",
                 MyColors.DEEP_ORANGE_ST,
-                R.drawable.diamond5_333333,
+                R.drawable.dot3_444444,
                 getResources().getDisplayMetrics().density,
-                new SharkToothFilter(5)
+                new SharkToothFilter(9)
         );
         mPurplePath = new SlidingFilterPath("Purple path",
                 MyColors.DEEP_PURPLE_ST,
-                R.drawable.diamond5_333333,
+                R.drawable.dot3_444444,
                 getResources().getDisplayMetrics().density,
-                new SharkToothFilter(13)
+                new MeanFilter(9)
         );
         mBluePath = new Path("Blue path",
                 MyColors.DEEP_BLUE_ST,
-                R.drawable.circle7_black,
+                R.drawable.dot3_444444,
                 getResources().getDisplayMetrics().density
             );
 
@@ -847,6 +847,28 @@ public class NewtonCreekActivity extends FragmentActivity {
         }
 
         abstract public LatLng applyFilter(ArrayList<Location> locations, final int cur);
+    }
+
+    public class MeanFilter extends Filter {
+        private static final String TAG = "MeanFilter";
+
+        public MeanFilter(final int windowSize) { super(windowSize); }
+
+        @Override
+        public LatLng applyFilter(ArrayList<Location> locations, int cur) {
+            if (cur < mWindowSize - 1) {
+                Log.d(TAG, "applyFilter: skipping locations[" + cur + "] (window size=" + mWindowSize + ")");
+                return null;
+            }
+
+            double latTotal = 0, lngTotal = 0;
+            for (int i = cur - mWindowSize + 1; i <= cur; i++) {
+                latTotal += locations.get(i).getLatitude();
+                lngTotal += locations.get(i).getLongitude();
+            }
+
+            return new LatLng(latTotal/mWindowSize, lngTotal/mWindowSize);
+        }
     }
 
     public class MedianFilter extends Filter {
