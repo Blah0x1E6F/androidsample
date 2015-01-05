@@ -95,29 +95,41 @@ public class NewtonCreekActivity extends FragmentActivity {
                 R.drawable.dot3_444444,
                 getResources().getDisplayMetrics().density
             );
+//        mGreenPath = new SlidingFilterPath("Green path",
+//                MyColors.DEEP_GREEN_ST,
+//                R.drawable.dot3_444444,
+//                getResources().getDisplayMetrics().density,
+//                new MedianFilter(9)
+//        );
         mGreenPath = new SlidingFilterPath("Green path",
                 MyColors.DEEP_GREEN_ST,
                 R.drawable.dot3_444444,
                 getResources().getDisplayMetrics().density,
-                new MedianFilter(9)
+                new SharkToothFilter(9)
         );
         mOrangePath = new SlidingFilterPath("Orange path",
                 MyColors.DEEP_ORANGE_ST,
                 R.drawable.dot3_444444,
                 getResources().getDisplayMetrics().density,
-                new SharkToothFilter(9)
+                new SharkToothFilter(19)
         );
         mPurplePath = new SlidingFilterPath("Purple path",
                 MyColors.DEEP_PURPLE_ST,
                 R.drawable.dot3_444444,
                 getResources().getDisplayMetrics().density,
-                new MeanFilter(9)
+                new DiscrGaussianFilter(9)
         );
-        mBluePath = new Path("Blue path",
+//        mBluePath = new Path("Blue path",
+//                MyColors.DEEP_BLUE_ST,
+//                R.drawable.dot3_444444,
+//                getResources().getDisplayMetrics().density
+//            );
+        mBluePath = new SlidingFilterPath("Blue path",
                 MyColors.DEEP_BLUE_ST,
                 R.drawable.dot3_444444,
-                getResources().getDisplayMetrics().density
-            );
+                getResources().getDisplayMetrics().density,
+                new DiscrGaussianFilter(19)
+        );
 
         // Start my background service...
         Intent intent = new Intent(this, NewtonCreekService.class);
@@ -941,6 +953,49 @@ public class NewtonCreekActivity extends FragmentActivity {
 
             // Total should be 1, but due to rounding I don't think we can expect that precision
             Assert.assertTrue(0.99 < total && total < 1.01);
+        }
+
+        public LatLng applyFilter(ArrayList<Location> locations, final int cur) {
+            if (cur < mWindowSize - 1) {
+                Log.d(TAG, "applyFilter: skipping locations[" + cur + "] (window size=" + mWindowSize + ")");
+                return null;
+            }
+
+            double lat = 0, lng = 0;
+            for (int i = cur - mWindowSize + 1, j = 0; i <= cur; i++, j++) {
+                lat += locations.get(i).getLatitude() * mWeights[j];
+                lng += locations.get(i).getLongitude() * mWeights[j];
+            }
+
+            return new LatLng(lat, lng);
+        }
+    }
+
+    public class DiscrGaussianFilter extends Filter {
+        private static final String TAG = "DiscrGaussianFilter";
+        private static final int NUM_STD_DEVS = 3; // How many std devs on either side of mean
+
+        private double[] mWeights;
+
+        public DiscrGaussianFilter(final int windowSize) {
+            super(windowSize);
+
+            // Create the filter
+            mWeights = new double[mWindowSize];
+            double total = 0;
+            double deltaX = (double)NUM_STD_DEVS * 2 / (mWindowSize - 1); // 4 means "3 std devs on each side of the mean"
+
+            for (int i = 0; i < mWindowSize; i++) {
+                double curX = -NUM_STD_DEVS + i * deltaX;
+                mWeights[i] = MyUtil.stdNormDist(curX);
+                total += mWeights[i];
+            }
+
+            // Normalize weights so they all add up to 1
+            double normFactor = 1/total;
+            for (int i = 0; i < mWindowSize; i++) {
+                mWeights[i] *= normFactor;
+            }
         }
 
         public LatLng applyFilter(ArrayList<Location> locations, final int cur) {

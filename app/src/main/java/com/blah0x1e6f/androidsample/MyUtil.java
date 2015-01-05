@@ -17,4 +17,14 @@ public class MyUtil {
         return Color.parseColor(MyColors.DEEP_RED);
     }
 
+    /*
+     * Returns value of the normal distribution (Gaussian) fn parameterized with mean=0 and stdev=1
+     * (See http://en.wikipedia.org/wiki/Normal_distribution)
+     */
+    public static double stdNormDist(final double x) {
+        double factor = 1 / Math.sqrt( 2 * Math.PI);
+        double power = -(x * x / 2);
+        double etothepower = Math.exp(power);
+        return factor * etothepower;
+    }
 }
